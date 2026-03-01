@@ -1,0 +1,67 @@
+Decision Log – Monday.com AI BI Agent
+________________________________________
+Key Architectural Decisions
+1. Layered Architecture
+The system was divided into distinct layers: API layer, normalization layer, BI engine, agent layer, and UI layer.
+Why:
+Separation of concerns ensures maintainability, clarity, and deterministic behavior. Each layer has a single responsibility and can be tested independently.
+________________________________________
+2. Live API Execution (No Caching / No Preload)
+Data is fetched live from Monday.com for every valid user query. No caching or background loading is used.
+Why:
+This strictly follows assignment constraints and ensures all insights are based on fresh data. Clarification checks are performed before API calls to avoid unnecessary requests.
+________________________________________
+3. Deterministic BI Engine
+All metrics (pipeline, revenue, sector breakdown, weighted values, cross-board joins) are computed in Python using explicit logic.
+Why:
+LLMs are unreliable for financial aggregation and relational joins. Deterministic computation guarantees accuracy, auditability, and zero hallucination in metrics.
+________________________________________
+4. Hybrid Agent Approach
+The agent parses intent (pipeline, revenue, work orders), sector, and timeframe using rule-based logic, then routes to the BI engine.
+Why:
+LLMs are strong at language understanding but weak at numerical reasoning. A hybrid approach allows flexible queries while keeping computation fully controlled.
+________________________________________
+5. Clarification Logic
+The system asks clarifying questions when intent, sector, or timeframe is ambiguous.
+Why:
+Prevents incorrect assumptions and avoids executing unnecessary API calls. Ensures user intent is validated before computation.
+________________________________________
+6. Follow-Up Context Memory
+Session state stores previously parsed intent, sector, and timeframe.
+Why:
+Enables multi-turn conversation without re-specifying parameters, while still fetching live data for each query.
+________________________________________
+7. Normalization Layer
+Monday’s nested column structure is flattened and mapped to semantic field names. Safe type conversions are applied to numbers and dates.
+Why:
+CRM data is inconsistent. Normalization ensures reliable analytics and prevents runtime errors from null or malformed values.
+________________________________________
+8. Client Code Standardization
+Client identifiers from Deals and Work Orders are normalized to a common format before joins.
+Why:
+Cross-board joins require consistent identifiers. Without normalization, fulfillment and revenue tracking would be inaccurate.
+________________________________________
+9. Cross-Board Join Strategy
+Deals and Work Orders are joined using normalized client codes.
+Why:
+Enables pipeline vs execution comparison and revenue realization tracking at sector and quarter levels.
+________________________________________
+10. Sector Aggregation Layer
+High-level business sectors (e.g., “Energy”) map to multiple CRM categories (e.g., “powerline”, “renewables”).
+Why:
+Founders think in business categories, not internal CRM taxonomy. Aggregation maintains executive abstraction while preserving deterministic filtering.
+________________________________________
+11. Visible Tool Execution Trace
+Each query displays parsing steps, API fetch events, routing decisions, and raw metric outputs.
+Why:
+Provides transparency into system behavior and satisfies the requirement for visible reasoning steps.
+________________________________________
+Tradeoffs
+•	No caching increases latency but ensures live-data integrity.
+•	Rule-based parsing is less flexible than full LLM NLU but is more predictable and controllable.
+•	Manual sector grouping requires maintenance but preserves business abstraction.
+________________________________________
+Conclusion
+The final system is deterministic, modular, and compliant with live-data constraints. It separates language interpretation from analytics, prevents metric hallucination, supports cross-board reasoning, and enables conversational follow-up while maintaining transparency and reliability.
+The design prioritizes correctness and auditability over automation complexity.
+
